@@ -1,6 +1,10 @@
 const fs = require("fs/promises");
 
 (async () => {
+  const CREATE_FILE = "create a file"
+  const DELETE_FILE = "delete a file"
+  const RENAME_FILE = "rename the file"
+  const ADD_TO_THE_FILE = "add to the file"
 
   const commandFileHandler = await fs.open("./command.txt", "r");
 
@@ -19,7 +23,48 @@ const fs = require("fs/promises");
     }
 
   }
-  const CREATE_FILE = "create a file"
+
+  const deleteFile = async (path) => {
+    try {
+      await fs.unlink(path)
+      console.log("File was deleted succesfully")
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        console.log("No file at this path to remove")
+      } else {
+        console.log("An error ocurred while removing the file")
+        console.log(error)
+      }
+    }
+  }
+
+  const renameFile = async (oldPath, newPath) => {
+    try {
+      const existingFileHandle = await fs.open(oldPath, "r")
+      await fs.rename(oldPath, newPath)
+      console.log(`Rename ${oldPath} to ${newPath}`)
+
+      existingFileHandle.close();
+    } catch (error) {
+      console.log("The file doesn't exist")
+    }
+  }
+
+  let addedContent;
+
+  const addToFile = async (path, content) => {
+    if (addedContent === content) return
+    try {
+      const fileHandle = await fs.open(path, "a")
+      fileHandle.write(content)
+      addedContent = content;
+      console.log("the content was added succesfully")
+    
+    } catch (error) {
+      console.log("An error ocurred while adding content to the file")
+    }
+  }
+
   commandFileHandler.on("change", async () => {
     // get the size of our file
     const size = (await commandFileHandler.stat()).size;
@@ -40,9 +85,39 @@ const fs = require("fs/promises");
       position
     );
     const command = buff.toString("utf8");
+
+    // Create a file
+    // create the file <path>
     if (command.includes(CREATE_FILE)) {
       const path = command.substring(CREATE_FILE.length + 1)
       createFile(path)
+    }
+
+    //Delete a file
+    //Delete the file <path>
+    if (command.includes(DELETE_FILE)) {
+      const path = command.substring(DELETE_FILE.length + 1)
+      deleteFile(path)
+
+    }
+
+    //Rename a file
+    //rename the file <path> to <new-path>
+    if (command.includes(RENAME_FILE)) {
+      const _idx = command.indexOf(" to ");
+      const oldPath = command.substring(RENAME_FILE.length + 1, _idx)
+      const newPath = command.substring(_idx + 4)
+      renameFile(oldPath, newPath)
+
+    }
+
+    //Add to file: 
+    //Add to the file <path> this content: <content>
+    if (command.includes(ADD_TO_THE_FILE)) {
+      const _idx = command.indexOf(" this content ");
+      const filePath = command.substring(ADD_TO_THE_FILE.length + 1, _idx)
+      const content = command.substring(_idx + 15)
+      addToFile(filePath, content)
     }
 
   });

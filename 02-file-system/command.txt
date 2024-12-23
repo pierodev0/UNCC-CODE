@@ -1,1 +1,1 @@
-create a file 2.txt
+add to the file text.txt this content : Hi!asd
